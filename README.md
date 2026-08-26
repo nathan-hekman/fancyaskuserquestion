@@ -21,9 +21,6 @@ aloud in that order while the visuals land on the beat.
   to the wildest point, so one freak sale can't flatten a $40 trend into a
   wire; outliers get pinned to the top edge and named. Real dates on the axis,
   a dashed least-squares trend per series with its percentage in the corner.
-- **Trendlines that draw on cue**, left to right, on the sentence that mentions
-  them.
-- **Values that count up** as they arrive.
 - **Two escape hatches on every card**: *I'll talk to Claude about it*, and
   *Other — say it in your own words*, which opens a text box. Both come back
   with your picks.
@@ -31,12 +28,16 @@ aloud in that order while the visuals land on the beat.
   choices baked in, which reaches the session that built it. Or copy the key
   line (`1a 2c 3b`) and paste it in chat.
 
-**Sound is on by default**, with a speaker toggle in every card's header that
-remembers what you chose. When a browser refuses to autoplay, the toggle says
-so and glows rather than the page pretending to be muted — any tap starts it.
-Nothing waits on the audio either way: every reveal fires on a timer if the
-sound never comes. All of it collapses to plain visibility under
+**One tap starts it.** No browser will play audio without a gesture, so the
+deck opens on a start screen — *Play walkthrough*, or *Read it myself* for a
+silent pass — instead of opening muted and looking broken. After that tap every
+later clip plays on its own, and a speaker toggle in each card header remembers
+what you chose. Nothing waits on the audio: if sound never comes, every reveal
+fires on a timer anyway, and all of it collapses to plain visibility under
 `prefers-reduced-motion`.
+
+**The chart arrives finished.** It's evidence, not a performance — you can look
+at it whenever you like rather than waiting for a line to finish drawing.
 
 **The question also lands in your chat.** Claude prints the cards and their
 lettered options alongside the link, so you can tap the deck or type `1a 2c 3b`

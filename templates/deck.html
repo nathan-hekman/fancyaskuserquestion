@@ -193,6 +193,23 @@
   .foot{padding:1.6rem 1.1rem 0;color:var(--ink-soft);font-size:0.79rem;max-width:60ch}
 
   .sound{display:none;justify-content:center;padding:0.2rem 0.85rem 0.5rem}
+
+  /* A browser will not start audio without a gesture, so ask for one rather
+     than letting the deck open silent and look broken. */
+  .gate{position:fixed;inset:0;z-index:60;display:grid;place-items:center;
+    padding:1.5rem;background:color-mix(in srgb,var(--ground) 88%,transparent);
+    backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);text-align:center}
+  .gate[hidden]{display:none}
+  .gate .inner{display:flex;flex-direction:column;align-items:center;gap:0.9rem;max-width:22rem}
+  .gate h2{font-size:clamp(1.3rem,5vw,1.75rem);text-transform:uppercase;letter-spacing:-0.02em}
+  .gate p{color:var(--ink-soft);font-size:0.9rem}
+  .gate .big{display:flex;align-items:center;gap:0.6rem;padding:0.95rem 1.7rem;font-size:0.95rem}
+  .gate .row{display:flex;gap:0.6rem;flex-wrap:wrap;justify-content:center}
+  .gate .pulse{position:absolute;width:96px;height:96px;border-radius:50%;
+    border:2px solid var(--yellow);opacity:0;pointer-events:none;
+    animation:ring 2.6s var(--ease) infinite}
+  @keyframes ring{0%{transform:scale(.7);opacity:.55}70%{transform:scale(1.45);opacity:0}100%{opacity:0}}
+  @media (prefers-reduced-motion:reduce){.gate .pulse{animation:none;display:none}}
   .mute{appearance:none;background:transparent;border:2px solid currentColor;border-radius:999px;
     width:30px;height:30px;display:grid;place-items:center;cursor:pointer;color:var(--on-plum);flex:none}
   .mute:hover{background:var(--on-plum);color:var(--plum)}
@@ -225,6 +242,20 @@
   <p class="foot">DECK_FOOT</p>
 </div>
 
+<div class="gate" id="gate">
+  <div class="inner">
+    <span class="pulse" aria-hidden="true"></span>
+    <h2>DECK_TITLE</h2>
+    <p>DECK_DEK</p>
+    <div class="row">
+      <button class="btn big" type="button" id="gostart">
+        <span aria-hidden="true">&#9654;</span> Play walkthrough
+      </button>
+      <button class="btn ghost" type="button" id="gosilent">Read it myself</button>
+    </div>
+  </div>
+</div>
+
 <div class="dock">
   <span class="count" id="count">Nothing picked</span>
   <span class="count keys num" id="keys"></span>
@@ -244,7 +275,9 @@ var deck = document.getElementById("deck"),
     keysEl = document.getElementById("keys"),
     copyBtn = document.getElementById("copy"),
     sendBtn = document.getElementById("send"),
-    dummy = null;
+    gate = document.getElementById("gate"),
+    goStart = document.getElementById("gostart"),
+    goSilent = document.getElementById("gosilent");
 
 var au = new Audio();
 au.preload = "auto";
@@ -254,6 +287,7 @@ var muteButtons = [];
 /* Sound is on unless the reader turned it off. A browser that refuses to
    autoplay is a third state — on, but waiting for a tap — and the button says
    so rather than the page pretending it is muted. */
+var started = false;      /* no audio call until a real gesture has happened */
 var soundOn = true;
 try {
   var saved = localStorage.getItem("deck-sound");
@@ -278,14 +312,25 @@ function toggleSound(){
   else { au.pause(); }
   paintMute();
 }
-/* the first touch anywhere satisfies a blocked autoplay */
-function unblockOnce(){
-  if (!blocked || !soundOn){ return; }
-  blocked = false;
-  play(cur, true);
+/* the gate: one tap, and every later clip plays without asking again */
+function openDeck(withSound){
+  if (started){ return; }
+  started = true;
+  soundOn = !!withSound && Object.keys(CLIPS).length > 0;
+  try { localStorage.setItem("deck-sound", soundOn ? "on" : "off"); } catch (e) {}
+  if (gate){ gate.hidden = true; }
   paintMute();
+  if (soundOn){ play(cur, true); }
+  else { revealAll(slides[cur]); }
 }
-document.addEventListener("pointerdown", unblockOnce, { once: false });
+/* a blocked clip mid-deck still recovers on the next touch */
+document.addEventListener("pointerdown", function(){
+  if (started && blocked && soundOn){
+    blocked = false;
+    play(cur, true);
+    paintMute();
+  }
+});
 
 function money(v){ return (v < 0 ? "−$" : "+$") + Math.abs(v).toFixed(2); }
 function dollars(v){ return "$" + v.toFixed(v < 100 ? 2 : 0); }
@@ -374,7 +419,6 @@ function colorVar(name){
 }
 function drawChart(host, c){
   host.innerHTML = "";
-  host._reveal = {};
   var spec = c.chart;
   if (!spec || !spec.series || !spec.series.length){ host.style.display = "none"; return; }
   host.style.display = "";
@@ -492,14 +536,6 @@ function drawChart(host, c){
     var line = add("polyline", {points:pts.join(" "), fill:"none", stroke:color,
                                 "stroke-width":2.6, "stroke-linejoin":"round",
                                 "stroke-linecap":"round"});
-    var len = 1200;
-    try { len = line.getTotalLength() || 1200; } catch (err) { len = 1200; }
-    if (!reducedMotion()){
-      line.setAttribute("stroke-dasharray", len);
-      line.setAttribute("stroke-dashoffset", len);
-      line.animate([{strokeDashoffset:len},{strokeDashoffset:0}],
-                   {duration:1900, easing:"cubic-bezier(.33,.7,.4,1)", fill:"forwards"});
-    }
     var end = s.points[s.points.length - 1];
     add("circle", {cx:X(end.d), cy:Y(end.v), r:4.2, fill:color,
                    stroke:"var(--paper)", "stroke-width":2});
@@ -509,11 +545,9 @@ function drawChart(host, c){
     var color = colorVar(s.color);
     kept[s.name].forEach(function(p, i){
       var dot = add("circle", {cx:X(p.d), cy:Y(p.v), r:3.4, fill:color,
-                               stroke:"var(--paper)", "stroke-width":1.4, opacity:0});
+                               stroke:"var(--paper)", "stroke-width":1.4});
       dot.appendChild(document.createElementNS(NS, "title")).textContent =
         s.name + " " + fmt(p.v) + " on " + p.d;
-      dot.animate([{opacity:0},{opacity:1}],
-        {duration:300, delay:700 + i * 55, easing:"ease-out", fill:"forwards"});
     });
   });
 
@@ -532,7 +566,7 @@ function drawChart(host, c){
   }
 
   /* a dashed trend per series, its percentage in the corner, drawn on cue */
-  var slot = 0, still = reducedMotion();
+  var slot = 0;
   spec.series.forEach(function(s){
     if (s.trend === false){ return; }
     var pts = s.kind === "points" ? kept[s.name] : s.points;
@@ -543,7 +577,6 @@ function drawChart(host, c){
     var line = add("line", {x1:X(f.d0), y1:y0, x2:X(f.d1), y2:y1, stroke:color,
                             "stroke-width":2.2, "stroke-dasharray":"6 4", opacity:0.92,
                             "stroke-linecap":"round"});
-    var span = Math.hypot(X(f.d1) - X(f.d0), y1 - y0);
     var sign = f.pct >= 0 ? "+" : "−";
     var txt = s.name + " " + sign + Math.abs(f.pct).toFixed(0) + "%";
     var by = PT + 10 + (slot++) * 19, bw = txt.length * 6.4 + 26;
@@ -560,22 +593,9 @@ function drawChart(host, c){
                   "stroke-width":2, "stroke-dasharray":"4 3", "stroke-linecap":"round"});
     gadd("text", {x:PL + 30, y:by + 2, fill:color, "font-size":10, "font-weight":800}, txt);
 
-    if (still){ g.setAttribute("opacity", 1); host._reveal[s.name] = function(){}; return; }
-    line.style.visibility = "hidden";
-    var fired = false;
-    /* draw for as long as the sentence that mentions this series, so the line
-       is still growing while the voice is still talking about it */
-    var drawMs = Math.max(1200, Math.min(5000, (s.cueDur || 1.6) * 1000 * 0.9));
-    host._reveal[s.name] = function(){
-      if (fired){ return; }
-      fired = true;
-      line.style.visibility = "";
-      line.animate([{strokeDasharray:"0 " + span, strokeDashoffset:0},
-                    {strokeDasharray:"6 4", strokeDashoffset:0}],
-        {duration:drawMs, easing:"cubic-bezier(.33,.7,.4,1)", fill:"forwards"});
-      g.animate([{opacity:0, transform:"translateX(-8px)"},{opacity:1, transform:"none"}],
-        {duration:520, delay:drawMs * 0.45, easing:"cubic-bezier(.16,1,.3,1)", fill:"forwards"});
-    };
+    /* The chart is evidence, not a performance: it arrives finished, so a
+       reader can look at it whenever they like rather than waiting for it. */
+    g.setAttribute("opacity", 1);
   });
 }
 
@@ -816,6 +836,19 @@ function openOther(c, opts, btn){
 function pick(c, letter){
   if (letter !== "f"){ answers[c.key] = letter; }
   paintPips(); paintDock(); paintSummary(); paintMute();
+
+if (goStart){ goStart.addEventListener("click", function(){ openDeck(true); }); }
+if (goSilent){ goSilent.addEventListener("click", function(){ openDeck(false); }); }
+
+/* nothing to play, or the reader already turned sound off: no gate */
+var silentDeck = Object.keys(CLIPS).length === 0;
+var mutedByChoice = false;
+try { mutedByChoice = localStorage.getItem("deck-sound") === "off"; } catch (e) {}
+if (gate && (silentDeck || mutedByChoice)){
+  gate.hidden = true;
+  started = true;
+  soundOn = false;
+}
   var i = CARDS.indexOf(c);
   setTimeout(function(){ goTo(Math.min(i + 1, CARDS.length)); }, 460);
 }
@@ -886,60 +919,11 @@ au.addEventListener("timeupdate", function(){
   var c = CARDS[cur], t = au.currentTime;
   Array.prototype.forEach.call(slide._facts.children, function(el, i){
     var at = (c.facts[i] && c.facts[i].t) || 0;
-    if (t >= at && !el.classList.contains("in")){
-      el.classList.add("in");
-      var v = el.querySelector(".v");
-      if (v){ countUp(v, (c.facts[i] && c.facts[i].dur * 1000) || 1400); }
-    }
+    if (t >= at){ el.classList.add("in"); }
   });
-  var rv = slide._plot && slide._plot._reveal;
-  if (rv){
-    ((c.chart && c.chart.series) || []).forEach(function(s){
-      if (rv[s.name] && t >= (s.cueAt || 0)){ rv[s.name](); }
-    });
-  }
   var p = pips.children[cur];
   if (p && au.duration){ p.firstChild.style.transform = "scaleX(" + (t / au.duration) + ")"; }
 });
-
-/* a value that lands on the beat should arrive, not just appear */
-function countUp(el, ms){
-  if (reducedMotion() || el._counted){ el.textContent = el._full || el.textContent; return; }
-  var full = el._full || el.textContent;
-  el._full = full; el._counted = true;
-  var m = full.match(/-?−?\d[\d,]*\.?\d*/);
-  if (!m){ return; }
-  /* The number should still be climbing while the sentence is still being
-     spoken. A fixed 620ms landed long before the voice got to the figure. */
-  var span = Math.max(900, Math.min(4200, (ms || 1400)));
-  var target = parseFloat(m[0].replace(/[,−]/g, "")), t0 = null;
-  var dec = (m[0].split(".")[1] || "").length;
-  function frame(ts){
-    if (t0 === null){ t0 = ts; }
-    var k = Math.min(1, (ts - t0) / span);
-    var eased = 1 - Math.pow(1 - k, 4);
-    var v = (target * eased).toFixed(dec);
-    el.textContent = full.replace(m[0], m[0].charAt(0) === "−" ? "−" + v : v);
-    if (k < 1){ requestAnimationFrame(frame); }
-    else { el.textContent = full; }
-  }
-  requestAnimationFrame(frame);
-}
-
-/* audio blocked or absent: the trends still draw, just on a timer */
-function revealTrends(slide, delay){
-  var rv = slide && slide._plot && slide._plot._reveal;
-  if (!rv){ return; }
-  Object.keys(rv).forEach(function(name, i){
-    setTimeout(rv[name], delay + i * 1500);
-  });
-}
-
-function factMs(slide, i){
-  var c = CARDS[slides.indexOf(slide)];
-  var f = c && c.facts && c.facts[i];
-  return f && f.dur ? f.dur * 1000 : 1400;
-}
 
 function revealAll(slide){
   if (!slide || !slide._facts){ return; }
@@ -947,8 +931,6 @@ function revealAll(slide){
     if (el.classList.contains("in")){ return; }
     el.style.animationDelay = (i * 90) + "ms";
     el.classList.add("in");
-    var v = el.querySelector(".v");
-    if (v){ countUp(v, factMs(slide, i)); }
   });
 }
 
@@ -956,9 +938,8 @@ function play(i, force){
   if (i >= CARDS.length || i < 0){ au.pause(); return; }
   var c = CARDS[i];
   if (!CLIPS[c.clip]){ return; }              /* a silent deck still works */
-  if (!soundOn){
+  if (!started || !soundOn){
     revealAll(slides[i]);
-    revealTrends(slides[i], 200);
     return;
   }
   if (!force && au.src === CLIPS[c.clip] && !au.paused){ return; }
@@ -970,7 +951,6 @@ function play(i, force){
       blocked = true;
       paintMute();
       revealAll(slides[i]);
-      revealTrends(slides[i], 260);
     });
   }
 }
@@ -1007,7 +987,6 @@ function onArrive(i){
     slide._fallback = setTimeout(function(){
       if (au.paused || !au.currentTime){
         revealAll(slide);
-        revealTrends(slide, 200);
       }
     }, 900);
   } else {
@@ -1059,6 +1038,19 @@ function saveBack(){
 CARDS.forEach(function(c, i){ slides.push(buildSlide(c, i)); });
 slides.push(buildSummary());
 paintPips(); paintDock(); paintSummary(); paintMute();
+
+if (goStart){ goStart.addEventListener("click", function(){ openDeck(true); }); }
+if (goSilent){ goSilent.addEventListener("click", function(){ openDeck(false); }); }
+
+/* nothing to play, or the reader already turned sound off: no gate */
+var silentDeck = Object.keys(CLIPS).length === 0;
+var mutedByChoice = false;
+try { mutedByChoice = localStorage.getItem("deck-sound") === "off"; } catch (e) {}
+if (gate && (silentDeck || mutedByChoice)){
+  gate.hidden = true;
+  started = true;
+  soundOn = false;
+}
 
 var firstOpen = 0;
 for (var i = 0; i < CARDS.length; i++){
