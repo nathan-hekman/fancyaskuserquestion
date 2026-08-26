@@ -1,0 +1,39 @@
+{
+  "title": "Pick a caching layer",
+  "kicker": "Architecture decision",
+  "dek": "Each option reads itself out and the numbers land as they're spoken. Answer any card, in any order, then send.",
+  "foot": "Latency figures are p95 from the load test on 2026-08-20. Costs are list price at our current volume.",
+  "rate": 172,
+  "cards": [
+    {
+      "key": "1",
+      "name": "Redis or Postgres for the session cache",
+      "sub": "affects every logged-in request",
+      "headline": "Take Redis — it holds p95 under 4ms at our peak, where Postgres crosses 40ms.",
+      "say": "Card one. The session cache. Postgres costs us nothing extra, because we already run it. Redis adds fourteen dollars a month, but it held p95 latency under four milliseconds through the whole load test. Postgres crossed forty milliseconds at peak. My call is Redis.",
+      "facts": [
+        {"icon": "tag", "k": "Extra cost", "v": "$0 on Postgres"},
+        {"icon": "clock", "k": "Redis p95", "v": "3.8ms", "tone": "good", "vt": "up"},
+        {"icon": "down", "k": "Postgres p95 at peak", "v": "41ms", "tone": "warn", "vt": "down"}
+      ],
+      "chart": {
+        "label": "p95 latency through the load test",
+        "unit": "ms",
+        "marker": {"label": "budget", "value": 20},
+        "series": [
+          {"name": "redis", "color": "plum", "kind": "line", "cueFact": 1,
+           "points": [{"d": "2026-08-20", "v": 3.1}, {"d": "2026-08-21", "v": 3.4},
+                      {"d": "2026-08-22", "v": 3.9}, {"d": "2026-08-23", "v": 3.8}]},
+          {"name": "postgres", "color": "orange", "kind": "line", "cueFact": 2, "fill": false,
+           "points": [{"d": "2026-08-20", "v": 12.0}, {"d": "2026-08-21", "v": 19.5},
+                      {"d": "2026-08-22", "v": 33.0}, {"d": "2026-08-23", "v": 41.0}]}
+        ]
+      },
+      "options": [
+        {"letter": "a", "label": "Redis", "sub": "$14/mo, p95 stays under 4ms", "rec": true, "delta": -14, "deltaLabel": "per month"},
+        {"letter": "b", "label": "Stay on Postgres", "sub": "free, but 41ms at peak"},
+        {"letter": "c", "label": "Redis only for hot keys", "sub": "half the cost, more code to maintain", "delta": -7, "deltaLabel": "per month"}
+      ]
+    }
+  ]
+}

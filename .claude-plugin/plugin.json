@@ -1,0 +1,23 @@
+{
+  "name": "fancyaskuserquestion",
+  "version": "0.1.0",
+  "description": "Turns a decision into a narrated, animated card deck you swipe through on your phone. Claude generates the audio and the visuals, times them together, and your picks come back to the session.",
+  "author": {
+    "name": "Nathan Hekman",
+    "url": "https://github.com/nathan-hekman"
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/faq-activate.js\"",
+            "timeout": 5,
+            "statusMessage": "Loading fancyaskuserquestion..."
+          }
+        ]
+      }
+    ]
+  }
+}
