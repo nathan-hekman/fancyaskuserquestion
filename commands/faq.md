@@ -1,23 +1,23 @@
 ---
-description: "Settings for fancyquestions (auto/manual/off, voice, rate, theme, narrate), or build a decision deck for a question you type."
+description: "Settings for fancyaskuserquestion (auto/manual/off, voice, rate, theme, narrate), or build a decision deck for a question you type."
 argument-hint: "status | auto | manual | off | on | voice <name> | voices | rate <n> | narrate on|off | theme dark|light|auto | <a decision to put to me>"
 ---
 
 Interpret `$ARGUMENTS` as follows. Match exactly — do not be creative.
 
-Settings live in `~/.config/fancyquestions/config.json`. Read it, apply
+Settings live in `~/.config/faq/config.json`. Read it, apply
 the change, write it back, and confirm in ONE line. Never dump the whole file.
 
 - **empty or `status`** — print the current mode, voice, rate, narrate and
   theme on one line each. Nothing else.
 
-- **`auto`** — set `mode: "auto"`. Confirm: "Fancy questions → auto. Decisions with
+- **`auto`** — set `mode: "auto"`. Confirm: "Fancy ask → auto. Decisions with
   real options get a deck." 
 
-- **`manual`** — set `mode: "manual"`. Confirm: "Fancy questions → manual. I'll ask
-  in plain text unless you invoke /fancyquestions."
+- **`manual`** — set `mode: "manual"`. Confirm: "Fancy ask → manual. I'll ask
+  in plain text unless you invoke /faq."
 
-- **`off`** — set `mode: "off"`. Confirm: "Fancy questions off. /fancyquestions auto to bring it
+- **`off`** — set `mode: "off"`. Confirm: "Fancy ask off. /faq auto to bring it
   back."
 
 - **`on`** — same as `auto`.
@@ -41,5 +41,5 @@ the change, write it back, and confirm in ONE line. Never dump the whole file.
   evidence you actually have (never invent numbers), write the spec, run
   `scripts/build_deck.py`, publish it with the Artifact tool declaring
   `capabilities: {"artifact": {}}`, and hand over the link. Then stop and wait.
-  The skill `fancy-questions` has the full procedure; follow it rather than
+  The skill `fancy-ask` has the full procedure; follow it rather than
   improvising.

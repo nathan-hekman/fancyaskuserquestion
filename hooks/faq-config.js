@@ -1,4 +1,4 @@
-// fancyquestions-config.js — shared config for fancyquestions.
+// faq-config.js — shared config for fancyaskuserquestion.
 //
 // Settings live in one JSON file so the hook, the slash command and the build
 // script all read the same thing. Nothing here touches the network.
@@ -10,7 +10,7 @@ const path = require('path');
 const VALID_MODES = ['auto', 'manual', 'off'];
 
 function configDir() {
-  return path.join(os.homedir(), '.config', 'fancyquestions');
+  return path.join(os.homedir(), '.config', 'fancyaskuserquestion');
 }
 
 function configPath() {

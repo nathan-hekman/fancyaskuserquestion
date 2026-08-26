@@ -1,17 +1,17 @@
 #!/usr/bin/env node
-// fancyquestions-activate.js — SessionStart hook.
+// faq-activate.js — SessionStart hook.
 //
 // Prints one status line plus, when the mode is on, the rules Claude follows
 // when it has a decision to put in front of you.
 
 const path = require('path');
 const fs = require('fs');
-const { readConfig } = require('./fancyquestions-config');
+const { readConfig } = require('./faq-config');
 
 const cfg = readConfig();
 
 if (cfg.mode === 'off') {
-  process.stdout.write('fancyquestions: off for this session (/fancyquestions on to enable).\n');
+  process.stdout.write('fancyaskuserquestion: off for this session (/faq on to enable).\n');
   process.exit(0);
 }
 
@@ -25,7 +25,7 @@ try {
 const build = path.join(__dirname, '..', 'scripts', 'build_deck.py');
 
 const rules = `
-FANCY QUESTIONS ACTIVE — mode: ${cfg.mode} · theme: ${cfg.theme} · version: ${version}
+FANCY ASK ACTIVE — mode: ${cfg.mode} · theme: ${cfg.theme} · version: ${version}
 
 When you are about to ask the user to choose between options — an
 AskUserQuestion, a plan needing approval, a set of trade-offs, anything where
@@ -34,7 +34,7 @@ you would otherwise print a lettered list — build a decision deck instead.
 WHEN IT APPLIES
 - ${cfg.mode === 'auto'
       ? 'Any decision with ' + cfg.minOptions + '+ real options and enough substance that the user needs evidence to choose.'
-      : 'Only when the user asks for one, or invokes /fancyquestions <question>.'}
+      : 'Only when the user asks for one, or invokes /faq <question>.'}
 - Skip it for a yes/no with no evidence behind it, for a clarifying question
   mid-task, and any time the user is clearly in a hurry.
 
@@ -58,7 +58,7 @@ RULES THAT MATTER
 - The recommendation is advice. Never pre-select, never act on an unanswered
   card, and say plainly which are still open.
 - Never let a number on a card be one you have not verified.
-- Full spec and field reference: ${path.join(__dirname, '..', 'skills', 'fancy-questions', 'SKILL.md')}
+- Full spec and field reference: ${path.join(__dirname, '..', 'skills', 'fancy-ask', 'SKILL.md')}
 `.trim();
 
 process.stdout.write(rules + '\n');

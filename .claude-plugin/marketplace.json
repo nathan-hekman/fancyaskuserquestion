@@ -1,6 +1,6 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "fancyquestions",
+  "name": "fancyaskuserquestion",
   "description": "Narrated, animated decision decks in place of a plain multiple-choice prompt.",
   "owner": {
     "name": "Nathan Hekman",
@@ -8,8 +8,8 @@
   },
   "plugins": [
     {
-      "name": "fancyquestions",
-      "version": "0.2.0",
+      "name": "fancyaskuserquestion",
+      "version": "0.3.0",
       "description": "Ask the user with sound and pictures, not a list.",
       "source": "./",
       "category": "productivity"

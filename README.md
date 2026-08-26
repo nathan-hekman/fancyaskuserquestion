@@ -1,4 +1,4 @@
-# fancyquestions
+# fancyaskuserquestion
 
 A Claude Code plugin that replaces a multiple-choice prompt with something you
 can actually decide from: a narrated, animated card deck you swipe through on
@@ -38,8 +38,8 @@ on a timer instead. Everything collapses to plain visibility under
 ## Install
 
 ```bash
-claude plugin marketplace add nathan-hekman/fancyquestions
-claude plugin install fancyquestions@fancyquestions
+claude plugin marketplace add nathan-hekman/faq
+claude plugin install fancyaskuserquestion@fancyaskuserquestion
 ```
 
 Or clone it and point Claude Code at the directory.
@@ -53,7 +53,7 @@ Mostly you don't. Once installed, Claude reaches for a deck on its own when a
 decision has real options and real evidence behind it. To force one:
 
 ```
-/fancyquestions should we move the session cache to Redis?
+/faq should we move the session cache to Redis?
 ```
 
 To build one yourself:
@@ -69,17 +69,17 @@ that capability is what carries the answers back.
 
 | Command | Does |
 |---|---|
-| `/fancyquestions status` | current settings |
-| `/fancyquestions auto` | offer a deck whenever a decision comes up (default) |
-| `/fancyquestions manual` | only when asked |
-| `/fancyquestions off` | plain text, as before |
-| `/fancyquestions voice <name>` | pick a speaking voice |
-| `/fancyquestions voices` | list the ones installed |
-| `/fancyquestions rate <n>` | words per minute, 120-260 |
-| `/fancyquestions narrate off` | silent decks, for a quiet room |
-| `/fancyquestions theme dark\|light\|auto` | page theme |
+| `/faq status` | current settings |
+| `/faq auto` | offer a deck whenever a decision comes up (default) |
+| `/faq manual` | only when asked |
+| `/faq off` | plain text, as before |
+| `/faq voice <name>` | pick a speaking voice |
+| `/faq voices` | list the ones installed |
+| `/faq rate <n>` | words per minute, 120-260 |
+| `/faq narrate off` | silent decks, for a quiet room |
+| `/faq theme dark\|light\|auto` | page theme |
 
-They live in `~/.config/fancyquestions/config.json`.
+They live in `~/.config/faq/config.json`.
 
 ## The spec
 
