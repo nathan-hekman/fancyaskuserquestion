@@ -27,8 +27,9 @@ Spec (see examples/example-spec.json for a filled-in one):
         "headline": "The call and its reason, in one sentence with a number.",
         "say": "What the narration reads. One idea per sentence.",
         "facts": [
-          {"icon": "tag", "k": "Cost", "v": "$42.00"},
-          {"icon": "offer", "k": "Live offer", "v": "$38.62", "tone": "warn", "vt": "down"}
+          {"icon": "tag", "k": "Cost", "v": "$42.00", "cueSentence": 2},
+          {"icon": "offer", "k": "Live offer", "v": "$38.62", "tone": "warn",
+           "vt": "down", "cueSentence": 2, "cueOffset": 1.4}
         ],
         "chart": {
           "label": "Offer and sales history",
@@ -48,8 +49,11 @@ Spec (see examples/example-spec.json for a filled-in one):
       }]
     }
 
-Facts are revealed in order, one per sentence of `say`. A series with
-`cueFact: n` draws its trendline when fact n lands. Two options are appended to
+Facts are revealed one per sentence of `say`, in order, and each animates for
+as long as its sentence lasts. `cueSentence` pins a fact to a particular
+sentence when the script has a lead-in; `cueOffset` (seconds) separates two
+facts that share one. A series with `cueFact: n` draws its trendline while fact
+n's sentence is being spoken. Two options are appended to
 every card automatically: "I'll talk to Claude about it" and "Other".
 
 Icons available: tag offer up down flat bars check clock chat pen ban cart
@@ -121,9 +125,11 @@ def data_uri(source: str | None) -> str | None:
 def narrate(text: str, voice: str, rate: int, workdir: Path, stem: str):
     """Speak `text` one sentence at a time and stitch the clips together.
 
-    Returns (data_uri, [cue_seconds]) — one cue per sentence, so a caller can
-    hang a visual on the moment a given sentence starts. Returns (None, [])
-    when no speech synthesiser is available; the deck still works, silently.
+    Returns (data_uri, [{"t": start, "dur": seconds}]) — one entry per
+    sentence. A visual hung on a sentence can then last exactly as long as the
+    sentence does, which is the whole point of speaking them separately.
+    Returns (None, []) when no speech synthesiser is available; the deck still
+    works, silently.
     """
     if not text or not have("say") or not have("ffmpeg"):
         if text and not have("say"):
@@ -147,8 +153,9 @@ def narrate(text: str, voice: str, rate: int, workdir: Path, stem: str):
         except subprocess.CalledProcessError as exc:
             print(f"  ! say failed on sentence {i}: {exc.stderr.decode()[:120]}", file=sys.stderr)
             return None, []
-        cues.append(round(at, 2))
-        at += duration(clip) + gap
+        secs = duration(clip)
+        cues.append({"t": round(at, 2), "dur": round(secs + gap, 2)})
+        at += secs + gap
         clips.append(clip)
 
     listing = workdir / f"{stem}.txt"
@@ -205,21 +212,32 @@ def build(spec: dict, outdir: Path) -> Path:
                     clips[clip_id] = uri
             print(f"  card {card['key']}: {len(cues)} narration cues")
 
-            # each fact lands on its own sentence; extras land on the last one
+            # A fact lands on the sentence that says it and lasts as long as
+            # that sentence. By default that is sentence i — write one idea per
+            # sentence, in the same order as the facts, and it lines up. When
+            # the script opens with a lead-in ("Card eight."), say which
+            # sentence each fact belongs to with cueSentence, and nudge a
+            # second fact sharing one sentence with cueOffset.
             facts = card.get("facts") or []
             for i, fact in enumerate(facts):
+                idx = fact.get("cueSentence", i)
+                cue = cues[idx] if 0 <= idx < len(cues) else (cues[-1] if cues else None)
+                offset = float(fact.get("cueOffset", 0))
                 if "t" not in fact:
-                    fact["t"] = cues[i] if i < len(cues) else (cues[-1] if cues else 0)
+                    fact["t"] = round((cue["t"] if cue else 0) + offset, 2)
+                if "dur" not in fact:
+                    fact["dur"] = round(max(0.6, (cue["dur"] if cue else 0) - offset), 2)
             card["facts"] = facts
 
             chart = card.get("chart")
             if chart:
                 for series in chart.get("series", []):
-                    if "cueAt" in series:
-                        continue
                     idx = series.get("cueFact")
-                    series["cueAt"] = (facts[idx]["t"] if isinstance(idx, int)
-                                       and 0 <= idx < len(facts) else 0)
+                    anchored = (isinstance(idx, int) and 0 <= idx < len(facts))
+                    if "cueAt" not in series:
+                        series["cueAt"] = facts[idx]["t"] if anchored else 0
+                    if "cueDur" not in series:
+                        series["cueDur"] = facts[idx].get("dur", 0) if anchored else 0
                 card["chart"] = chart
 
             options = list(card.get("options") or [])

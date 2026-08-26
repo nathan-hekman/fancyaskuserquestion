@@ -498,7 +498,7 @@ function drawChart(host, c){
       line.setAttribute("stroke-dasharray", len);
       line.setAttribute("stroke-dashoffset", len);
       line.animate([{strokeDashoffset:len},{strokeDashoffset:0}],
-                   {duration:1000, easing:"cubic-bezier(.22,1,.36,1)", fill:"forwards"});
+                   {duration:1900, easing:"cubic-bezier(.33,.7,.4,1)", fill:"forwards"});
     }
     var end = s.points[s.points.length - 1];
     add("circle", {cx:X(end.d), cy:Y(end.v), r:4.2, fill:color,
@@ -513,7 +513,7 @@ function drawChart(host, c){
       dot.appendChild(document.createElementNS(NS, "title")).textContent =
         s.name + " " + fmt(p.v) + " on " + p.d;
       dot.animate([{opacity:0},{opacity:1}],
-        {duration:240, delay:380 + i * 40, easing:"ease-out", fill:"forwards"});
+        {duration:300, delay:700 + i * 55, easing:"ease-out", fill:"forwards"});
     });
   });
 
@@ -563,15 +563,18 @@ function drawChart(host, c){
     if (still){ g.setAttribute("opacity", 1); host._reveal[s.name] = function(){}; return; }
     line.style.visibility = "hidden";
     var fired = false;
+    /* draw for as long as the sentence that mentions this series, so the line
+       is still growing while the voice is still talking about it */
+    var drawMs = Math.max(1200, Math.min(5000, (s.cueDur || 1.6) * 1000 * 0.9));
     host._reveal[s.name] = function(){
       if (fired){ return; }
       fired = true;
       line.style.visibility = "";
       line.animate([{strokeDasharray:"0 " + span, strokeDashoffset:0},
                     {strokeDasharray:"6 4", strokeDashoffset:0}],
-        {duration:900, easing:"cubic-bezier(.16,1,.3,1)", fill:"forwards"});
+        {duration:drawMs, easing:"cubic-bezier(.33,.7,.4,1)", fill:"forwards"});
       g.animate([{opacity:0, transform:"translateX(-8px)"},{opacity:1, transform:"none"}],
-        {duration:420, delay:320, easing:"cubic-bezier(.16,1,.3,1)", fill:"forwards"});
+        {duration:520, delay:drawMs * 0.45, easing:"cubic-bezier(.16,1,.3,1)", fill:"forwards"});
     };
   });
 }
@@ -886,7 +889,7 @@ au.addEventListener("timeupdate", function(){
     if (t >= at && !el.classList.contains("in")){
       el.classList.add("in");
       var v = el.querySelector(".v");
-      if (v){ countUp(v); }
+      if (v){ countUp(v, (c.facts[i] && c.facts[i].dur * 1000) || 1400); }
     }
   });
   var rv = slide._plot && slide._plot._reveal;
@@ -900,17 +903,20 @@ au.addEventListener("timeupdate", function(){
 });
 
 /* a value that lands on the beat should arrive, not just appear */
-function countUp(el){
+function countUp(el, ms){
   if (reducedMotion() || el._counted){ el.textContent = el._full || el.textContent; return; }
   var full = el._full || el.textContent;
   el._full = full; el._counted = true;
   var m = full.match(/-?−?\d[\d,]*\.?\d*/);
   if (!m){ return; }
+  /* The number should still be climbing while the sentence is still being
+     spoken. A fixed 620ms landed long before the voice got to the figure. */
+  var span = Math.max(900, Math.min(4200, (ms || 1400)));
   var target = parseFloat(m[0].replace(/[,−]/g, "")), t0 = null;
   var dec = (m[0].split(".")[1] || "").length;
   function frame(ts){
     if (t0 === null){ t0 = ts; }
-    var k = Math.min(1, (ts - t0) / 620);
+    var k = Math.min(1, (ts - t0) / span);
     var eased = 1 - Math.pow(1 - k, 4);
     var v = (target * eased).toFixed(dec);
     el.textContent = full.replace(m[0], m[0].charAt(0) === "−" ? "−" + v : v);
@@ -925,18 +931,24 @@ function revealTrends(slide, delay){
   var rv = slide && slide._plot && slide._plot._reveal;
   if (!rv){ return; }
   Object.keys(rv).forEach(function(name, i){
-    setTimeout(rv[name], delay + i * 640);
+    setTimeout(rv[name], delay + i * 1500);
   });
+}
+
+function factMs(slide, i){
+  var c = CARDS[slides.indexOf(slide)];
+  var f = c && c.facts && c.facts[i];
+  return f && f.dur ? f.dur * 1000 : 1400;
 }
 
 function revealAll(slide){
   if (!slide || !slide._facts){ return; }
   Array.prototype.forEach.call(slide._facts.children, function(el, i){
     if (el.classList.contains("in")){ return; }
-    el.style.animationDelay = (i * 70) + "ms";
+    el.style.animationDelay = (i * 90) + "ms";
     el.classList.add("in");
     var v = el.querySelector(".v");
-    if (v){ countUp(v); }
+    if (v){ countUp(v, factMs(slide, i)); }
   });
 }
 
