@@ -193,6 +193,13 @@
   .foot{padding:1.6rem 1.1rem 0;color:var(--ink-soft);font-size:0.79rem;max-width:60ch}
 
   .sound{display:none;justify-content:center;padding:0.2rem 0.85rem 0.5rem}
+  .mute{appearance:none;background:transparent;border:2px solid currentColor;border-radius:999px;
+    width:30px;height:30px;display:grid;place-items:center;cursor:pointer;color:var(--on-plum);flex:none}
+  .mute:hover{background:var(--on-plum);color:var(--plum)}
+  .mute:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
+  .mute.blocked{background:var(--yellow);color:#000;border-color:#000;
+    animation:nudge 1.6s ease-in-out 3}
+  @keyframes nudge{0%,100%{transform:none}50%{transform:scale(1.12)}}
   .sound.show{display:flex}
   .sound .btn{box-shadow:0 6px 18px var(--shadow)}
 
@@ -212,10 +219,6 @@
     <p class="dek">DECK_DEK</p>
     <div class="pips" id="pips"></div>
   </header>
-
-  <div class="sound" id="sound">
-    <button class="btn" type="button" id="soundbtn">Tap for sound</button>
-  </div>
 
   <div class="deck" id="deck"></div>
 
@@ -241,12 +244,48 @@ var deck = document.getElementById("deck"),
     keysEl = document.getElementById("keys"),
     copyBtn = document.getElementById("copy"),
     sendBtn = document.getElementById("send"),
-    soundWrap = document.getElementById("sound"),
-    soundBtn = document.getElementById("soundbtn");
+    dummy = null;
 
 var au = new Audio();
 au.preload = "auto";
 var cur = -1, slides = [], eqTimer = null, blocked = false;
+var muteButtons = [];
+
+/* Sound is on unless the reader turned it off. A browser that refuses to
+   autoplay is a third state — on, but waiting for a tap — and the button says
+   so rather than the page pretending it is muted. */
+var soundOn = true;
+try {
+  var saved = localStorage.getItem("deck-sound");
+  if (saved === "off"){ soundOn = false; }
+} catch (e) { /* private window: default to on */ }
+
+function paintMute(){
+  muteButtons.forEach(function(b){
+    b.innerHTML = "";
+    b.appendChild(icon(soundOn ? "sound" : "muted"));
+    b.classList.toggle("blocked", soundOn && blocked);
+    b.setAttribute("aria-label", !soundOn ? "Turn sound on"
+      : blocked ? "Tap to start the sound" : "Turn sound off");
+    b.setAttribute("aria-pressed", String(!soundOn));
+  });
+}
+function toggleSound(){
+  if (soundOn && blocked){ blocked = false; play(cur, true); paintMute(); return; }
+  soundOn = !soundOn;
+  try { localStorage.setItem("deck-sound", soundOn ? "on" : "off"); } catch (e) {}
+  if (soundOn){ blocked = false; play(cur, true); }
+  else { au.pause(); }
+  paintMute();
+}
+/* the first touch anywhere satisfies a blocked autoplay */
+function unblockOnce(){
+  if (!blocked || !soundOn){ return; }
+  blocked = false;
+  play(cur, true);
+  paintMute();
+}
+document.addEventListener("pointerdown", unblockOnce, { once: false });
 
 function money(v){ return (v < 0 ? "−$" : "+$") + Math.abs(v).toFixed(2); }
 function dollars(v){ return "$" + v.toFixed(v < 100 ? 2 : 0); }
@@ -268,7 +307,9 @@ var ICON = {
   ban:  "M3.8 3.8l8.4 8.4 M14 8A6 6 0 1 1 2 8a6 6 0 0 1 12 0",
   cart: "M2 3h2l1.6 7.2A1.5 1.5 0 0 0 7 11.5h5.2a1.5 1.5 0 0 0 1.5-1.2L14.5 5.5H4.5 M6.5 14h.01 M12 14h.01",
   play: "M4.5 3.2 12.5 8l-8 4.8Z",
-  redo: "M13 5.5A5.5 5.5 0 1 0 13.5 9 M13 2v3.5H9.5"
+  redo: "M13 5.5A5.5 5.5 0 1 0 13.5 9 M13 2v3.5H9.5",
+  sound:"M8.5 3 5 6H2.5v4H5l3.5 3Z M11 6.2a2.6 2.6 0 0 1 0 3.6 M13 4.4a5.2 5.2 0 0 1 0 7.2",
+  muted:"M8.5 3 5 6H2.5v4H5l3.5 3Z M11.5 6.5l3 3 M14.5 6.5l-3 3"
 };
 function icon(name, size){
   var s = document.createElementNS(NS, "svg");
@@ -569,10 +610,15 @@ function buildSlide(c, i){
   replay.setAttribute("aria-label", "Replay this card");
   replay.appendChild(icon("redo"));
   replay.addEventListener("click", function(){ play(i, true); });
+
+  var mute = document.createElement("button");
+  mute.className = "mute"; mute.type = "button";
+  mute.addEventListener("click", function(e){ e.stopPropagation(); toggleSound(); });
+  muteButtons.push(mute);
   var eq = document.createElement("span");
   eq.className = "eq";
   for (var b = 0; b < 7; b++){ eq.appendChild(document.createElement("i")); }
-  top.appendChild(n); top.appendChild(replay); top.appendChild(eq);
+  top.appendChild(n); top.appendChild(replay); top.appendChild(mute); top.appendChild(eq);
   sheet.appendChild(top);
 
   var id = document.createElement("div");
@@ -684,7 +730,8 @@ function paintSummary(){
     var ic = document.createElement("span");
     ic.className = "fact";
     var t = document.createElement("span"); t.className = "t";
-    var b = document.createElement("b"); b.textContent = c.name;
+    var b = document.createElement("b");
+    b.textContent = displayKey(c) + ". " + c.name;
     var sp = document.createElement("span");
     sp.textContent = L === "f" ? textOf(a) : (o ? o.label : "still open");
     t.appendChild(b); t.appendChild(sp);
@@ -717,6 +764,7 @@ function paintOptions(c, opts){
       (letterOf(answers[c.key]) === o.letter ? " picked" : "");
     var badge = document.createElement("span");
     badge.className = "badge"; badge.textContent = o.letter;
+    badge.title = "type " + displayKey(c) + o.letter + " in chat";
     var t = document.createElement("span"); t.className = "t";
     var bb = document.createElement("b"); bb.textContent = o.label;
     var ss = document.createElement("span");
@@ -764,7 +812,7 @@ function openOther(c, opts, btn){
 }
 function pick(c, letter){
   if (letter !== "f"){ answers[c.key] = letter; }
-  paintPips(); paintDock(); paintSummary();
+  paintPips(); paintDock(); paintSummary(); paintMute();
   var i = CARDS.indexOf(c);
   setTimeout(function(){ goTo(Math.min(i + 1, CARDS.length)); }, 460);
 }
@@ -787,9 +835,13 @@ function paintPips(){
     if (i !== cur && !L){ p.firstChild.style.transform = "scaleX(0)"; }
   });
 }
+/* On screen a card is always its position in the deck — 1 of 4, never 5 of 4 —
+   whatever id the spec gave it. The id stays the key of the answers map. */
+function displayKey(c){ return String(CARDS.indexOf(c) + 1); }
+
 function paintDock(){
   var picked = CARDS.filter(function(c){ return answers[c.key]; });
-  var keys = picked.map(function(c){ return c.key + letterOf(answers[c.key]); }).join(" ");
+  var keys = picked.map(function(c){ return displayKey(c) + letterOf(answers[c.key]); }).join(" ");
   keysEl.textContent = keys;
   countEl.textContent = picked.length ? picked.length + " of " + CARDS.length + " picked" : "Nothing picked";
   sendBtn.disabled = !picked.length;
@@ -817,7 +869,10 @@ function eqOn(on){
     Array.prototype.forEach.call(bars, function(b){ b.style.height = (18 + Math.random() * 80) + "%"; });
   }, 110);
 }
-au.addEventListener("play", function(){ eqOn(true); soundWrap.classList.remove("show"); });
+au.addEventListener("play", function(){
+  eqOn(true);
+  if (blocked){ blocked = false; paintMute(); }
+});
 au.addEventListener("pause", function(){ eqOn(false); });
 au.addEventListener("ended", function(){ eqOn(false); });
 
@@ -886,8 +941,14 @@ function revealAll(slide){
 }
 
 function play(i, force){
-  if (i >= CARDS.length){ au.pause(); return; }
+  if (i >= CARDS.length || i < 0){ au.pause(); return; }
   var c = CARDS[i];
+  if (!CLIPS[c.clip]){ return; }              /* a silent deck still works */
+  if (!soundOn){
+    revealAll(slides[i]);
+    revealTrends(slides[i], 200);
+    return;
+  }
   if (!force && au.src === CLIPS[c.clip] && !au.paused){ return; }
   au.src = CLIPS[c.clip];
   au.currentTime = 0;
@@ -895,17 +956,13 @@ function play(i, force){
   if (pr && pr.catch){
     pr.catch(function(){
       blocked = true;
-      soundWrap.classList.add("show");
+      paintMute();
       revealAll(slides[i]);
       revealTrends(slides[i], 260);
     });
   }
 }
-soundBtn.addEventListener("click", function(){
-  blocked = false;
-  soundWrap.classList.remove("show");
-  play(cur, true);
-});
+
 
 /* ---------- swipe ---------- */
 function goTo(i){
@@ -989,7 +1046,7 @@ function saveBack(){
 /* ---------- open: build, then start straight away ---------- */
 CARDS.forEach(function(c, i){ slides.push(buildSlide(c, i)); });
 slides.push(buildSummary());
-paintPips(); paintDock(); paintSummary();
+paintPips(); paintDock(); paintSummary(); paintMute();
 
 var firstOpen = 0;
 for (var i = 0; i < CARDS.length; i++){

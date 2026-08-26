@@ -31,9 +31,17 @@ aloud in that order while the visuals land on the beat.
   choices baked in, which reaches the session that built it. Or copy the key
   line (`1a 2c 3b`) and paste it in chat.
 
-Nothing waits on the audio: if your phone blocks autoplay, every reveal fires
-on a timer instead. Everything collapses to plain visibility under
+**Sound is on by default**, with a speaker toggle in every card's header that
+remembers what you chose. When a browser refuses to autoplay, the toggle says
+so and glows rather than the page pretending to be muted — any tap starts it.
+Nothing waits on the audio either way: every reveal fires on a timer if the
+sound never comes. All of it collapses to plain visibility under
 `prefers-reduced-motion`.
+
+**The question also lands in your chat.** Claude prints the cards and their
+lettered options alongside the link, so you can tap the deck or type `1a 2c 3b`
+— whichever is closer to hand. Cards are always numbered by position: card 1 of
+4 is `1a`, whatever ids the spec used.
 
 ## Install
 

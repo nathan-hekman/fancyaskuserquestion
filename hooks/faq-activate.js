@@ -47,10 +47,13 @@ HOW
    that mentions it, and writes one self-contained HTML file.
 3. Publish the HTML with the Artifact tool, declaring
    capabilities: {"artifact": {}} so the page can send the answers back.
-4. Hand the user the link. Stop and wait — the deck is the question.
-5. Answers reach you as a republish notification. Read the artifact, pull
-   \`var answers\`, and act only on what was actually chosen. An unanswered
-   card is not a skip.
+4. Hand the user the link AND print the question in chat under it — card
+   number, the call, and the lettered options, a few lines each. The deck is
+   the nicer way to answer, never the only way. Then stop and wait.
+5. Answers come back either typed in chat (\`1a\`, or \`1a 2c 3b\`) or tapped
+   in the deck, which republishes the page — read the artifact and pull
+   \`var answers\`. Both bind. Act only on what was actually chosen; an
+   unanswered card is not a skip.
 
 RULES THAT MATTER
 - Every card carries "I'll talk to Claude about it" and "Other — say it in

@@ -53,13 +53,40 @@ The `artifact` capability is what lets the page send answers back. Without it
 the deck still renders and the user can copy a key line instead, but nothing
 returns to you on its own.
 
-Hand over the link and **stop**. The deck is the question; do not also ask it
-in text, and do not proceed as though it were answered.
+## Say it in chat as well
+
+Hand over the link **and print the question in the chat underneath it**, so the
+deck is a nicer way to answer, never the only way. Someone at a keyboard should
+not have to open a page to reply, and a link that fails to load should not cost
+them the question.
+
+Keep the chat copy to a few lines per card — the deck carries the evidence:
+
+```
+**1. Redis or Postgres for the session cache**
+Take Redis — it holds p95 under 4ms at our peak, where Postgres crosses 40ms.
+  a  Redis — $14/mo, p95 under 4ms   (recommended)
+  b  Stay on Postgres — free, 41ms at peak
+  c  Redis for hot keys only — half the cost, more code
+  e  Talk it through with me
+  f  Something else — just say it
+
+Answer either way: tap the deck, or type `1a` here. Several at once is fine:
+`1a 2c 3b`.
+```
+
+Number the cards by position — 1, 2, 3 — matching what the deck shows, and use
+the same letters. Then **stop and wait**. Do not proceed as though it were
+answered.
 
 ## Reading the answers
 
-The user taps Send and the page republishes itself with their picks baked in.
-That arrives as a republish notification. Read the artifact, find `var answers`,
+Answers arrive one of two ways, and both are equally binding: typed in chat
+(`1a`, or `1a 2c 3b`), or tapped in the deck and sent, which republishes the
+page with the picks baked in and reaches you as a notification.
+
+For a typed answer, echo what you are about to do before doing it. For a
+tapped one, Read the artifact, find `var answers`,
 and act:
 
 - `{"1": "a"}` — they chose option a on card 1.
