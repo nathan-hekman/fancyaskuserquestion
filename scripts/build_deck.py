@@ -83,8 +83,8 @@ SENTENCE = re.compile(r"(?<=[.!?])\s+")
 
 
 def config() -> dict:
-    """Settings written by /faq. Absent or unreadable means defaults."""
-    path = Path.home() / ".config" / "fancyaskuserquestion" / "config.json"
+    """Settings written by /fancyquestions. Absent or unreadable means defaults."""
+    path = Path.home() / ".config" / "fancyquestions" / "config.json"
     try:
         return json.loads(path.read_text())
     except Exception:

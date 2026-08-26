@@ -1,10 +1,10 @@
 ---
-name: fancy-ask
+name: fancy-questions
 description: Use when about to ask the user to choose between options — an AskUserQuestion, a plan awaiting approval, a set of trade-offs, any lettered list of choices. Builds a narrated, animated card deck the user swipes through, and reads their answers back.
 version: 0.1.0
 ---
 
-# Fancy ask — a decision deck instead of a list
+# Fancy questions — a decision deck instead of a list
 
 A plain multiple-choice prompt puts the options in front of someone and leaves
 the evidence behind. A deck puts both in front of them: the call, the numbers,
@@ -91,9 +91,9 @@ did not answer.
 
 ## Settings
 
-`/faq` shows the current settings. `/faq off` disables the deck for the session;
-`/faq voice <name>` picks a speaking voice (`say -v '?'` lists them on macOS);
-`/faq narrate off` builds silent decks; `/faq manual` stops offering decks
+`/fancyquestions` shows the current settings. `/fancyquestions off` disables the deck for the session;
+`/fancyquestions voice <name>` picks a speaking voice (`say -v '?'` lists them on macOS);
+`/fancyquestions narrate off` builds silent decks; `/fancyquestions manual` stops offering decks
 unless asked.
 
 ## Requirements

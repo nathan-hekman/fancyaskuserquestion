@@ -5,7 +5,7 @@
 # or unsynced edit means the next session runs yesterday's code.
 set -uo pipefail
 REPO="$(git rev-parse --show-toplevel)"
-NAME="fancyaskuserquestion"
+NAME="fancyquestions"
 VERSION="$(python3 -c "import json,sys;print(json.load(open('$REPO/.claude-plugin/plugin.json'))['version'])" 2>/dev/null)"
 [ -n "$VERSION" ] || { echo "post-commit: no version in plugin.json; skip"; exit 0; }
 
