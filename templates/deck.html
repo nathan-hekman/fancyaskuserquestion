@@ -1042,12 +1042,14 @@ function saveBack(){
      substitution that matches nothing silently republishes a page with no
      answers in it, which reads exactly like nobody answered. */
   var payload = JSON.stringify(answers).replace(/</g, "\\u003c");
-  var block = '<script id="deck-answers" type="application/json">' + payload + '<\/script></body>';
-  var html = SOURCE.replace("</body>", block);
-  if (html.indexOf("deck-answers") < 0){
+  var block = '<script id="deck-answers" type="application/json">' + payload + '<\/script>';
+  /* the LAST closing body tag: this script's own source contains earlier ones */
+  var at = SOURCE.lastIndexOf("<\/body>");
+  if (at < 0){
     fallback("Couldn\u2019t save \u2014 copied instead");
     return;
   }
+  var html = SOURCE.slice(0, at) + block + SOURCE.slice(at);
 
   claude.use("artifact").then(function(artifact){
     if (!artifact){ fallback("Copy instead"); return; }

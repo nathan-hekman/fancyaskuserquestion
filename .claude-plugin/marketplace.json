@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "fancyaskuserquestion",
-      "version": "0.6.0",
+      "version": "0.6.1",
       "description": "Ask the user with sound and pictures, not a list.",
       "source": "./",
       "category": "productivity"

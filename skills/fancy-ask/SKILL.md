@@ -86,8 +86,12 @@ Answers arrive one of two ways, and both are equally binding: typed in chat
 page with the picks baked in and reaches you as a notification.
 
 For a typed answer, echo what you are about to do before doing it. For a
-tapped one, Read the artifact, find `var answers`,
-and act:
+tapped one, Read the artifact and find the picks in the JSON block it carries:
+
+    <script id="deck-answers" type="application/json">{"1":"a"}</script>
+
+A page with no such block was never sent — its built-in `var answers = {}` is
+the empty map it was built with, not an answer. Act on the block:
 
 - `{"1": "a"}` — they chose option a on card 1.
 - `{"2": {"letter": "f", "text": "…"}}` — they wrote their own answer. Read it
