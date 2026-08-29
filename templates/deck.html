@@ -267,6 +267,17 @@
 var CARDS = CARDS_JSON;
 var CLIPS = CLIPS_JSON;
 var answers = ANSWERS_JSON;
+/* A republished page carries its picks in a JSON block appended at save time.
+   It overrides the built-in map, which is why the built-in one is always valid
+   JSON and never a placeholder: a page that fails to carry answers must still
+   open as a working deck. */
+try {
+  var savedAnswers = document.getElementById("deck-answers");
+  if (savedAnswers){
+    var parsed = JSON.parse(savedAnswers.textContent);
+    if (parsed && typeof parsed === "object"){ answers = parsed; }
+  }
+} catch (e) {}
 
 var NS = "http://www.w3.org/2000/svg";
 var deck = document.getElementById("deck"),
@@ -1016,21 +1027,33 @@ document.addEventListener("keydown", function(e){
 
 /* ---------- saving ---------- */
 function saveBack(){
-  paintDock();
+  var keys = paintDock();
   sendBtn.disabled = true;
-  sendBtn.textContent = "Saving…";
+  sendBtn.textContent = "Saving\u2026";
   if (typeof SOURCE === "undefined"){ sendBtn.textContent = "Already sent"; return; }
+
+  function fallback(label){
+    sendBtn.textContent = label;
+    sendBtn.disabled = false;
+    if (navigator.clipboard){ navigator.clipboard.writeText(keys); }
+  }
+
+  /* Append the picks rather than substituting them into the page: a
+     substitution that matches nothing silently republishes a page with no
+     answers in it, which reads exactly like nobody answered. */
+  var payload = JSON.stringify(answers).replace(/</g, "\\u003c");
+  var block = '<script id="deck-answers" type="application/json">' + payload + '<\/script></body>';
+  var html = SOURCE.replace("</body>", block);
+  if (html.indexOf("deck-answers") < 0){
+    fallback("Couldn\u2019t save \u2014 copied instead");
+    return;
+  }
+
   claude.use("artifact").then(function(artifact){
-    if (!artifact){
-      sendBtn.textContent = "Copy instead";
-      sendBtn.disabled = false;
-      return;
-    }
-    var html = SOURCE.replace("ANSWERS_JSON_PLACEHOLDER", JSON.stringify(answers));
+    if (!artifact){ fallback("Copy instead"); return; }
     return artifact.publish(html).then(function(){ sendBtn.textContent = "Sent"; });
   }).catch(function(){
-    sendBtn.disabled = false;
-    sendBtn.textContent = "Failed — copy instead";
+    fallback("Failed \u2014 copied instead");
   });
 }
 

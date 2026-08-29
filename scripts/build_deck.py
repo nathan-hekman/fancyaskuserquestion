@@ -260,19 +260,26 @@ def build(spec: dict, outdir: Path) -> Path:
         html = html.replace(token, value)
 
     answers = spec.get("answers") or {}
+    seed = json.dumps(answers)
     html = (html.replace("CARDS_JSON", json.dumps(cards))
                 .replace("CLIPS_JSON", json.dumps(clips))
-                .replace("ANSWERS_JSON", "ANSWERS_JSON_PLACEHOLDER"))
+                .replace("ANSWERS_JSON", seed))
 
+    # The embedded copy the page republishes when someone sends their picks.
+    # Its answers map is real JSON, not a placeholder, so a save that somehow
+    # carries no picks still yields a page that opens and can be answered
+    # again. The picks ride in a JSON block appended before </body>.
     full = ('<!doctype html><html><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
             '</head><body>' + html + '</body></html>')
+    if "</body>" not in full:
+        raise SystemExit("template lost its </body>; the save path needs it")
     # a </script> inside the embedded copy would close the real tag
     source_literal = json.dumps(full).replace("</", "<\\/")
-    page = html.replace("ANSWERS_JSON_PLACEHOLDER", json.dumps(answers), 1)
-    page = page.replace("var answers = " + json.dumps(answers) + ";",
-                        "var answers = " + json.dumps(answers) + ";\n"
-                        "var SOURCE = " + source_literal + ";", 1)
+    marker = "var answers = " + seed + ";"
+    if marker not in html:
+        raise SystemExit("could not find the answers slot to attach SOURCE to")
+    page = html.replace(marker, marker + "\nvar SOURCE = " + source_literal + ";", 1)
 
     target = outdir / (slug(spec.get("title", "deck")) + ".html")
     target.write_text(page)
