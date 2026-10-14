@@ -17,6 +17,31 @@ rsync -a --delete \
   "$REPO/" "$DEST/" || exit 0
 echo "post-commit: $NAME -> cache $VERSION"
 
+# Point the install registry at this version BEFORE the prune below deletes
+# the old directory. On 2026-10-14 a 0.6.0 -> 0.6.1 bump pruned 0.6.0 while
+# installed_plugins.json still named it, which leaves new sessions without the
+# plugin. Same block as scrape-collection's plugin-cache-sync.sh.
+INSTALLED="$HOME/.claude/plugins/installed_plugins.json"
+if [ -f "$INSTALLED" ]; then
+  python3 - "$INSTALLED" "$NAME" "$VERSION" "$DEST" "$(git rev-parse HEAD)" <<'PY' || exit 0
+import json, sys, os, shutil, datetime
+ip, name, version, dest, sha = sys.argv[1:6]
+d = json.load(open(ip))
+ents = d.get("plugins", {}).get(f"{name}@{name}")
+if ents:
+    shutil.copy2(ip, ip + ".bak")
+    for e in ents:
+        e["installPath"] = dest
+        e["version"] = version
+        e["gitCommitSha"] = sha
+        e["lastUpdated"] = datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
+    tmp = ip + ".tmp"
+    json.dump(d, open(tmp, "w"), indent=2)
+    os.replace(tmp, ip)
+    print(f"  install registry -> {name} {version}")
+PY
+fi
+
 # drop stale version directories so the cache never serves two copies
 find "$HOME/.claude/plugins/cache/$NAME/$NAME" -mindepth 1 -maxdepth 1 -type d \
   ! -name "$VERSION" -exec rm -rf {} + 2>/dev/null
