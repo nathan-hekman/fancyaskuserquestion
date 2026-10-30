@@ -754,7 +754,7 @@ function paintSummary(){
   body.innerHTML = "";
   var done = CARDS.filter(function(c){ return answers[c.key]; }).length;
   var h = document.createElement("h2");
-  h.textContent = done === CARDS.length ? "All four answered." : done + " of " + CARDS.length + " answered.";
+  h.textContent = done === CARDS.length ? "All " + CARDS.length + " answered." : done + " of " + CARDS.length + " answered.";
   body.appendChild(h);
   CARDS.forEach(function(c, i){
     var a = answers[c.key], L = letterOf(a);
@@ -1053,7 +1053,7 @@ function saveBack(){
 
   claude.use("artifact").then(function(artifact){
     if (!artifact){ fallback("Copy instead"); return; }
-    return artifact.publish(html).then(function(){ sendBtn.textContent = "Sent"; });
+    return artifact.publish(html).then(function(){ sendBtn.textContent = "Saved. Tell Claude: sent"; });
   }).catch(function(){
     fallback("Failed \u2014 copied instead");
   });
